@@ -55,17 +55,15 @@ namespace ImAga
         {
             _watcher.EnableRaisingEvents = false;
             _watcher.Dispose();
+            // Create a new FileSystemWatcher and set its properties.
+            // Watch for changes in LastAccess and LastWrite times, and the renaming of files or directories.
+            // Only watch jpg
             _watcher = new FileSystemWatcher
                        {
                            Path = dir,
                            NotifyFilter = NotifyFilters.LastWrite,
                            Filter = "*.jpg"
                        };
-
-            // Create a new FileSystemWatcher and set its properties.
-            /* Watch for changes in LastAccess and LastWrite times, and
-               the renaming of files or directories. */
-            // Only watch text files.
 
             // Add event handlers.
             _watcher.Changed += OnChanged;
@@ -112,7 +110,7 @@ namespace ImAga
             FolderBrowserDialog fbd = new FolderBrowserDialog();
             
             string dir = RegistryHelper.Read("Path");
-            if (!string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
+            if (!String.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
                 fbd.SelectedPath = dir;
             
             if (fbd.ShowDialog() == DialogResult.OK)
