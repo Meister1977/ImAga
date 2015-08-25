@@ -30,10 +30,7 @@ namespace ImAga
         {
             using (RegistryKey key = Registry.CurrentUser.OpenSubKey(SUBKEY, true))
             {
-                if (key != null)
-                {
-                    key.DeleteValue(keyName);
-                }
+                key?.DeleteValue(keyName);
             }
         }
     }

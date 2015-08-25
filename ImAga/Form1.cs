@@ -1,38 +1,32 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace ImAga
 {
     public partial class Form1 : Form
     {
-        private Timer timer1 = new Timer();
-        public TimeSpan TimeoutToHide { get; private set; }
+        private readonly Timer _timer1 = new Timer();
+        public TimeSpan TimeoutToHide { get; }
         public DateTime LastMouseMove { get; private set; }
         public bool IsHidden { get; private set; }
-        private FileSystemWatcher watcher = new FileSystemWatcher();
+        private FileSystemWatcher _watcher = new FileSystemWatcher();
 
         public Form1()
         {
             InitializeComponent();
             TimeoutToHide = TimeSpan.FromSeconds(3);
-            this.MouseMove += new MouseEventHandler(Form1_MouseMove);
-            timer1.Interval = 500;
-            timer1.Tick += timer1_Tick;
+            MouseMove += Form1_MouseMove;
+            _timer1.Interval = 500;
+            _timer1.Tick += _timer1_Tick;
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            this.TopMost = true;
-            this.FormBorderStyle = FormBorderStyle.None;
-            this.WindowState = FormWindowState.Maximized;
+            TopMost = true;
+            FormBorderStyle = FormBorderStyle.None;
+            WindowState = FormWindowState.Maximized;
             //this.Bounds = Screen.PrimaryScreen.Bounds;
             
 
@@ -44,7 +38,7 @@ namespace ImAga
             {
                 GetFirstImage(dir);
                 StartWatching(dir);
-                timer1.Start();
+                _timer1.Start();
             }
         }
         private void GetFirstImage(string dir)
@@ -59,22 +53,24 @@ namespace ImAga
 
         private void StartWatching(string dir)
         {
-            watcher.EnableRaisingEvents = false;
-            watcher.Dispose();
-            watcher = new FileSystemWatcher();
+            _watcher.EnableRaisingEvents = false;
+            _watcher.Dispose();
+            _watcher = new FileSystemWatcher
+                       {
+                           Path = dir,
+                           NotifyFilter = NotifyFilters.LastWrite,
+                           Filter = "*.jpg"
+                       };
 
             // Create a new FileSystemWatcher and set its properties.
-            watcher.Path = dir;
             /* Watch for changes in LastAccess and LastWrite times, and
                the renaming of files or directories. */
-            watcher.NotifyFilter = NotifyFilters.LastWrite;
             // Only watch text files.
-            watcher.Filter = "*.jpg";
 
             // Add event handlers.
-            watcher.Changed += new FileSystemEventHandler(OnChanged);
+            _watcher.Changed += OnChanged;
             // Begin watching.
-            watcher.EnableRaisingEvents = true;
+            _watcher.EnableRaisingEvents = true;
         }
 
         private void OnChanged(object source, FileSystemEventArgs e)
@@ -87,28 +83,27 @@ namespace ImAga
                     pictureBox1.ImageLocation = e.FullPath;
                     loaded = true;
                 }
-                catch (System.IO.IOException)
+                catch (IOException)
                 {
-                    ;
                 }
             } while (!loaded);
 
         }
 
-        private void toolStripMenuItem2_Click(object sender, EventArgs e)
+        private void _toolStripMenuItem2_Click(object sender, EventArgs e)
         {
             Form1_MouseMove(null, null);
-            this.Close();
+            Close();
         }
 
-        private void toolStripMenuItem1_Click(object sender, EventArgs e)
+        private void _toolStripMenuItem1_Click(object sender, EventArgs e)
         {
             Form1_MouseMove(null, null);
             SelectDir(false);
         }
         private string SelectDir(bool isStart)
         {
-            timer1.Stop();
+            _timer1.Stop();
             if (IsHidden)
             {
                 Cursor.Show();
@@ -117,7 +112,7 @@ namespace ImAga
             FolderBrowserDialog fbd = new FolderBrowserDialog();
             
             string dir = RegistryHelper.Read("Path");
-            if (!String.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
+            if (!string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
                 fbd.SelectedPath = dir;
             
             if (fbd.ShowDialog() == DialogResult.OK)
@@ -129,7 +124,7 @@ namespace ImAga
             {
                 GetFirstImage(dir);
                 StartWatching(dir);
-                timer1.Start();
+                _timer1.Start();
             }
             return dir;
         }
@@ -145,7 +140,7 @@ namespace ImAga
             }
         } 
 
-        private void timer1_Tick(object sender, EventArgs e)
+        private void _timer1_Tick(object sender, EventArgs e)
         {
             TimeSpan elaped = DateTime.Now - LastMouseMove;
             if (elaped >= TimeoutToHide && !IsHidden)
@@ -155,7 +150,7 @@ namespace ImAga
             }
         }
 
-        private void pictureBox1_Click(object sender, EventArgs e)
+        private void _pictureBox1_Click(object sender, EventArgs e)
         {
             Form1_MouseMove(null, null);
             contextMenuStrip1.Show();
@@ -168,24 +163,24 @@ namespace ImAga
             if (e.KeyCode == Keys.Escape)
             {
                 Form1_MouseMove(null, null);
-                this.Close();
+                Close();
             }
         }
 
-        private void toolStripMenuItem3_Click(object sender, EventArgs e)
+        private void _toolStripMenuItem3_Click(object sender, EventArgs e)
         {
             if (toolStripMenuItem3.Text == "Ablakba")
             {
-                this.TopMost = false;
-                this.FormBorderStyle = FormBorderStyle.Sizable;
-                this.WindowState = FormWindowState.Normal;
+                TopMost = false;
+                FormBorderStyle = FormBorderStyle.Sizable;
+                WindowState = FormWindowState.Normal;
                 toolStripMenuItem3.Text = "Teljes képernyőre";
             }
             else
             {
-                this.TopMost = true;
-                this.FormBorderStyle = FormBorderStyle.None;
-                this.WindowState = FormWindowState.Maximized;
+                TopMost = true;
+                FormBorderStyle = FormBorderStyle.None;
+                WindowState = FormWindowState.Maximized;
                 toolStripMenuItem3.Text = "Ablakba";
             }
         }
