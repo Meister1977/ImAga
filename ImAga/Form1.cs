@@ -31,15 +31,14 @@ namespace ImAga
             
 
             string dir = RegistryHelper.Read("Path");
-            if (String.IsNullOrWhiteSpace(dir) || !Directory.Exists(dir))
+            if (string.IsNullOrWhiteSpace(dir) || !Directory.Exists(dir))
                 dir = SelectDir(true);
 
-            if (!String.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
-            {
-                GetFirstImage(dir);
-                StartWatching(dir);
-                _timer1.Start();
-            }
+            if (string.IsNullOrWhiteSpace(dir) || !Directory.Exists(dir))
+                return;
+            GetFirstImage(dir);
+            StartWatching(dir);
+            _timer1.Start();
         }
         private void GetFirstImage(string dir)
         {
@@ -48,7 +47,7 @@ namespace ImAga
                 .OrderByDescending(f => f.LastWriteTime);
 
             if (imageFiles.Any())
-                pictureBox1.ImageLocation = imageFiles.First().FullName;
+                pictureBox1.Image = ImageHandler.Rotate(imageFiles.First().FullName);
         }
 
         private void StartWatching(string dir)
@@ -73,19 +72,7 @@ namespace ImAga
 
         private void OnChanged(object source, FileSystemEventArgs e)
         {
-            bool loaded = false;
-            do
-            {
-                try
-                {
-                    pictureBox1.ImageLocation = e.FullPath;
-                    loaded = true;
-                }
-                catch (IOException)
-                {
-                }
-            } while (!loaded);
-
+            pictureBox1.Image = ImageHandler.Rotate(e.FullPath);
         }
 
         private void _toolStripMenuItem2_Click(object sender, EventArgs e)
@@ -107,23 +94,25 @@ namespace ImAga
                 Cursor.Show();
                 IsHidden = false;
             }
-            FolderBrowserDialog fbd = new FolderBrowserDialog();
-            
-            string dir = RegistryHelper.Read("Path");
-            if (!String.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
-                fbd.SelectedPath = dir;
-            
-            if (fbd.ShowDialog() == DialogResult.OK)
+            string dir;
+            using (FolderBrowserDialog fbd = new FolderBrowserDialog())
             {
-                dir = fbd.SelectedPath;
-                RegistryHelper.Write("Path", dir);
+                dir = RegistryHelper.Read("Path");
+                if (!string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
+                    fbd.SelectedPath = dir;
+            
+                if (fbd.ShowDialog() == DialogResult.OK)
+                {
+                    dir = fbd.SelectedPath;
+                    RegistryHelper.Write("Path", dir);
+                }
             }
-            if (!isStart)
-            {
-                GetFirstImage(dir);
-                StartWatching(dir);
-                _timer1.Start();
-            }
+            if (isStart)
+                return dir;
+
+            GetFirstImage(dir);
+            StartWatching(dir);
+            _timer1.Start();
             return dir;
         }
 
@@ -131,21 +120,20 @@ namespace ImAga
         {
             LastMouseMove = DateTime.Now;
 
-            if (IsHidden)
-            {
-                Cursor.Show();
-                IsHidden = false;
-            }
+            if (!IsHidden)
+                return;
+            Cursor.Show();
+            IsHidden = false;
         } 
 
         private void _timer1_Tick(object sender, EventArgs e)
         {
             TimeSpan elaped = DateTime.Now - LastMouseMove;
-            if (elaped >= TimeoutToHide && !IsHidden)
-            {
-                Cursor.Hide();
-                IsHidden = true;
-            }
+
+            if (elaped < TimeoutToHide || IsHidden)
+                return;
+            Cursor.Hide();
+            IsHidden = true;
         }
 
         private void _pictureBox1_Click(object sender, EventArgs e)
@@ -158,15 +146,15 @@ namespace ImAga
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.KeyCode == Keys.Escape)
-            {
-                Form1_MouseMove(null, null);
-                Close();
-            }
+            if (e.KeyCode != Keys.Escape)
+                return;
+            Form1_MouseMove(null, null);
+            Close();
         }
 
         private void _toolStripMenuItem3_Click(object sender, EventArgs e)
         {
+            Form1_MouseMove(null, null);
             if (toolStripMenuItem3.Text == "Ablakba")
             {
                 TopMost = false;
@@ -180,6 +168,25 @@ namespace ImAga
                 FormBorderStyle = FormBorderStyle.None;
                 WindowState = FormWindowState.Maximized;
                 toolStripMenuItem3.Text = "Ablakba";
+            }
+        }
+
+        private void _pictureBox1_MouseDown(object sender, MouseEventArgs e)
+        {
+            Form1_MouseMove(null, null);
+        }
+
+        private void Form1_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            if (_watcher != null)
+            {
+                _watcher.EnableRaisingEvents = false;
+                _watcher.Dispose();
+            }
+            if (_timer1 != null)
+            {
+                _timer1.Stop();
+                _timer1.Dispose();
             }
         }
     }
